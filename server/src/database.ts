@@ -1,10 +1,12 @@
 import * as mongodb from "mongodb";
-import { Item } from "./models/Item";  // Assuming you have defined the Item interface
-import { Store } from "./models/Store"; // Assuming you have defined the Store interface
+import { Item } from "./models/item";  // Assuming you have defined the Item interface
+import { Store } from "./models/store"; // Assuming you have defined the Store interface
+import { User } from "./models/user";
 
 export const collections: {
     items?: mongodb.Collection<Item>;
     stores?: mongodb.Collection<Store>;
+    users?: mongodb.Collection<User>;
 } = {};
 
 export async function connectToDatabase(uri: string) {
@@ -130,6 +132,41 @@ async function applySchemaValidation(db: mongodb.Db) {
         },
     };
 
+    // JSON Schema for the User collection
+    const userSchema = {
+        validator: {
+          $jsonSchema: {
+            bsonType: "object",
+            required: ["email", "password", "name", "createdAt"],
+            properties: {
+              email: {
+                bsonType: "string",
+                pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+              },
+              password: {
+                bsonType: "string",
+                minLength: 6
+              },
+              name: {
+                bsonType: "string"
+              },
+              createdAt: {
+                bsonType: "date"
+              }
+            }
+          }
+        }
+      };
+    
+    // Apply JSON schema validation to the users collection
+    await db.command({
+        collMod: "users",
+        validator: userSchema
+    }).catch(async (error: mongodb.MongoServerError) => {
+        if (error.codeName === "NamespaceNotFound") {
+            await db.createCollection("users", { validator: userSchema });
+        }
+    });
     // Apply JSON schema validation to the items collection
     await db.command({
         collMod: "items",

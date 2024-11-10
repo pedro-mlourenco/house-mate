@@ -4,6 +4,7 @@ import cors from "cors";
 import { connectToDatabase } from "./database";
 import { itemRouter } from "./routes/item.routes";
 import { storeRouter } from "./routes/store.routes";
+import { authRouter } from "./routes/auth.routes";
 
 // Load environment variables from the .env file, where the ATLAS_URI is configured
 require("dotenv").config();
@@ -24,6 +25,7 @@ connectToDatabase(ATLAS_URI)
     
     app.use("/items", itemRouter);
     app.use("/stores", storeRouter);
+    app.use("/auth", authRouter);
 
     // start the Express server
     app.listen(5200, () => {
