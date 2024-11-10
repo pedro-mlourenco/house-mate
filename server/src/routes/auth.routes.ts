@@ -4,14 +4,16 @@ import { ObjectId } from "mongodb";
 import { collections } from "../database";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { checkRole } from "../middleware/auth.middleware";
+import { UserRole } from "../models/user";
 
 export const authRouter = express.Router();
 authRouter.use(express.json());
 
 // Register new user
-authRouter.post("/register", async (req, res) => {
+authRouter.post("/register",async (req, res) => {
     try {
-        const { email, password, name } = req.body;
+        const { email, password, name, role = UserRole.USER } = req.body;
         
         // Check if user exists
         const existingUser = await collections?.users?.findOne({ email });
@@ -25,8 +27,9 @@ authRouter.post("/register", async (req, res) => {
         // Create user
         const user = {
             email,
-            password: hashedPassword,
+            password: await bcrypt.hash(password, 10),
             name,
+            role, // Will use default USER if not provided
             createdAt: new Date()
         };
 
