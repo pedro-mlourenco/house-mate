@@ -116,9 +116,8 @@ authRouter.get("/all", async (req, res) => {
 // Get user profile by email
 authRouter.get("/profile", async (req, res) => {
     try {
-        console.log('Query params:', req.query); // Debug log
         const email = req.query.email as string;
-        
+
         if (!email) {
             return res.status(400).json({
                 success: false,
@@ -133,8 +132,6 @@ authRouter.get("/profile", async (req, res) => {
 
         // Match query format with working /all endpoint
         const user = await users.findOne({ email: email });
-        console.log('Found user:', user); // Debug log
-
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -160,11 +157,11 @@ authRouter.get("/profile", async (req, res) => {
 });
 
 // Update user
-authRouter.put("/profile/:id", async (req, res) => {
+authRouter.put("/profile", async (req, res) => {
     try {
-        const id = req?.params?.id;
+        const email = req.query.email as string;
         const { password, ...updateData } = req.body;
-        const query = { _id: new ObjectId(id) };
+        const query = { email: email };
 
         // If password is being updated, hash it
         if (password) {
@@ -174,16 +171,61 @@ authRouter.put("/profile/:id", async (req, res) => {
         const result = await collections?.users?.updateOne(query, { $set: updateData });
 
         if (result && result.matchedCount) {
-            res.status(200).send(`Updated user: ID ${id}`);
+            let updatedUser = await collections?.users?.findOne(query);
+            res.status(200).json({
+                success: true,
+                user: updatedUser
+            });
         } else if (!result?.matchedCount) {
-            res.status(404).send(`Failed to find user: ID ${id}`);
+            res.status(404).send(`Failed to find user: ${email}`);
         } else {
-            res.status(304).send(`Failed to update user: ID ${id}`);
+            res.status(304).send(`Failed to update user: ${email}`);
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         console.error(message);
         res.status(400).send(message);
+    }
+});
+
+// Delete user
+authRouter.delete("/profile", async (req, res) => {
+    try {
+        const email = req.query.email as string;
+        
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email parameter is required"
+            });
+        }
+
+        const users = collections.users;
+        if (!users) {
+            throw new Error('Users collection is not initialized');
+        }
+
+        const result = await users.deleteOne({ email });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: `User not found with email: ${email}`
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "User deleted successfully"
+        });
+
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error deleting user",
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
 });
 

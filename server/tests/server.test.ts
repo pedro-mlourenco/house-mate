@@ -151,84 +151,70 @@ describe("Auth API", () => {
       .send(defaultUser);
     expect(response.status).toBe(409);
   });
-  test('should update user profile', async () => {
+  test("should update user profile", async () => {
     // Register and login
-    await request(app)
-      .post('/auth/register')
-      .send(defaultUser);
+    await request(app).post("/auth/register").send(defaultUser);
 
-    const loginResponse = await request(app)
-      .post('/auth/login')
-      .send({
-        email: defaultUser.email,
-        password: defaultUser.password
-      });
+    const loginResponse = await request(app).post("/auth/login").send({
+      email: defaultUser.email,
+      password: defaultUser.password,
+    });
 
     const updatedData = {
-      name: 'Updated Name'
+      name: "Updated Name",
     };
 
     const response = await request(app)
       .put(`/auth/profile?email=${defaultUser.email}`)
-      .set('Authorization', `Bearer ${loginResponse.body.token}`)
+      .set("Authorization", `Bearer ${loginResponse.body.token}`)
       .send(updatedData);
 
     expect(response.status).toBe(200);
     expect(response.body.user.name).toBe(updatedData.name);
   });
 
-  test('should delete user account', async () => {
+  test("should delete user account", async () => {
     // Register and login
-    await request(app)
-      .post('/auth/register')
-      .send(defaultUser);
+    await request(app).post("/auth/register").send(defaultUser);
 
-    const loginResponse = await request(app)
-      .post('/auth/login')
-      .send({
-        email: defaultUser.email,
-        password: defaultUser.password
-      });
+    const loginResponse = await request(app).post("/auth/login").send({
+      email: defaultUser.email,
+      password: defaultUser.password,
+    });
 
     const response = await request(app)
       .delete(`/auth/profile?email=${defaultUser.email}`)
-      .set('Authorization', `Bearer ${loginResponse.body.token}`);
+      .set("Authorization", `Bearer ${loginResponse.body.token}`);
 
     expect(response.status).toBe(200);
 
     // Verify deletion
     const profileResponse = await request(app)
       .get(`/auth/profile?email=${defaultUser.email}`)
-      .set('Authorization', `Bearer ${loginResponse.body.token}`);
+      .set("Authorization", `Bearer ${loginResponse.body.token}`);
     expect(profileResponse.status).toBe(404);
   });
 
-  test('should not login with invalid credentials', async () => {
+  test("should not login with invalid credentials", async () => {
     // Register user first
-    await request(app)
-      .post('/auth/register')
-      .send(defaultUser);
+    await request(app).post("/auth/register").send(defaultUser);
 
-    const response = await request(app)
-      .post('/auth/login')
-      .send({
-        email: defaultUser.email,
-        password: 'wrongpassword'
-      });
+    const response = await request(app).post("/auth/login").send({
+      email: defaultUser.email,
+      password: "wrongpassword",
+    });
 
     expect(response.status).toBe(401);
-    expect(response.body).not.toHaveProperty('token');
+    expect(response.body).not.toHaveProperty("token");
   });
 
-  test('should register admin user', async () => {
-    const response = await request(app)
-      .post('/auth/register')
-      .send(adminUser);
+  test("should register admin user", async () => {
+    const response = await request(app).post("/auth/register").send(adminUser);
 
     expect(response.status).toBe(201);
     expect(response.body.role).toBe(UserRole.ADMIN);
     expect(response.body.email).toBe(adminUser.email);
-    expect(response.body).not.toHaveProperty('password');
+    expect(response.body).not.toHaveProperty("password");
   });
 });
 
@@ -270,6 +256,15 @@ describe("Items API", () => {
   });
 
   test("should get specific item", async () => {
+    const createResponse = await request(app)
+      .post("/items")
+      .set("Authorization", `Bearer ${authToken}`)
+      .send(testItem);
+
+    expect(createResponse.status).toBe(201);
+    const itemId = createResponse.text.match(/ID (.*)\./)?.[1];
+
+    // Then try to get it
     const response = await request(app)
       .get(`/items/${itemId}`)
       .set("Authorization", `Bearer ${authToken}`);
@@ -281,29 +276,49 @@ describe("Items API", () => {
   });
 
   test("should update item", async () => {
+    const createResponse = await request(app)
+      .post("/items")
+      .set("Authorization", `Bearer ${authToken}`)
+      .send(testItem);
+
+    expect(createResponse.status).toBe(201);
+    const itemId = createResponse.text.match(/ID (.*)\./)?.[1];
+
+    // Update the item
     const updatedItem = {
       ...testItem,
       name: "Updated Item Name",
       quantity: 2,
     };
 
-    const response = await request(app)
+    const updateResponse = await request(app)
       .put(`/items/${itemId}`)
       .set("Authorization", `Bearer ${authToken}`)
       .send(updatedItem);
 
-    expect(response.status).toBe(200);
+    expect(updateResponse.status).toBe(200);
 
     // Verify update
     const getResponse = await request(app)
       .get(`/items/${itemId}`)
       .set("Authorization", `Bearer ${authToken}`);
 
+    expect(getResponse.status).toBe(200);
     expect(getResponse.body.name).toBe(updatedItem.name);
     expect(getResponse.body.quantity).toBe(updatedItem.quantity);
+    expect(getResponse.body.category).toBe(updatedItem.category);
   });
 
   test("should delete item", async () => {
+    const createResponse = await request(app)
+      .post("/items")
+      .set("Authorization", `Bearer ${authToken}`)
+      .send(testItem);
+
+    expect(createResponse.status).toBe(201);
+    const itemId = createResponse.text.match(/ID (.*)\./)?.[1];
+
+    // Delete the item
     const response = await request(app)
       .delete(`/items/${itemId}`)
       .set("Authorization", `Bearer ${authToken}`);
@@ -317,6 +332,7 @@ describe("Items API", () => {
 
     expect(getResponse.status).toBe(404);
   });
+
   test("should get all items", async () => {
     const response = await request(app)
       .get("/items")
@@ -355,7 +371,7 @@ describe("Stores API", () => {
 
   test("should create new store", async () => {
     const response = await request(app)
-      .post("/stores")
+      .post("/stores/new")
       .set("Authorization", `Bearer ${authToken}`)
       .send(testStore);
 
@@ -366,7 +382,7 @@ describe("Stores API", () => {
   test("should get specific store", async () => {
     // First create a store
     const createResponse = await request(app)
-      .post("/stores")
+      .post("/stores/new")
       .set("Authorization", `Bearer ${authToken}`)
       .send(testStore);
     storeId = createResponse.text.match(/ID (.*)\./)?.[1] || "";
@@ -384,7 +400,7 @@ describe("Stores API", () => {
   test("should update store", async () => {
     // First create a store
     const createResponse = await request(app)
-      .post("/stores")
+      .post("/stores/new")
       .set("Authorization", `Bearer ${authToken}`)
       .send(testStore);
     storeId = createResponse.text.match(/ID (.*)\./)?.[1] || "";
@@ -411,7 +427,7 @@ describe("Stores API", () => {
   test("should delete store", async () => {
     // First create a store
     const createResponse = await request(app)
-      .post("/stores")
+      .post("/stores/new")
       .set("Authorization", `Bearer ${authToken}`)
       .send(testStore);
     storeId = createResponse.text.match(/ID (.*)\./)?.[1] || "";
@@ -430,23 +446,52 @@ describe("Stores API", () => {
   });
 
   test("should not create store without required fields", async () => {
-    const invalidStore = {
+    // Test missing location
+    const missingLocation = {
       name: "Test Store",
-      // Missing location field
     };
-
-    const response = await request(app)
-      .post("/stores")
+    let response = await request(app)
+      .post("/stores/new")
       .set("Authorization", `Bearer ${authToken}`)
-      .send(invalidStore);
+      .send(missingLocation);
 
     expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty("error");
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toBe("Name and location are required fields");
+
+    // Test missing name
+    const missingName = {
+      location: "Test Location",
+    };
+    response = await request(app)
+      .post("/stores/new")
+      .set("Authorization", `Bearer ${authToken}`)
+      .send(missingName);
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toBe("Name and location are required fields");
+
+    // Test empty strings
+    /*
+    const emptyStrings = {
+      name: "",
+      location: " "
+    };
+    response = await request(app)
+      .post("/stores/new")
+      .set("Authorization", `Bearer ${authToken}`)
+      .send(emptyStrings);
+  
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toBe("Name and location cannot be empty");
+    */
   });
 
   test("should get all stores", async () => {
     const response = await request(app)
-      .get("/stores")
+      .get("/stores/all")
       .set("Authorization", `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);

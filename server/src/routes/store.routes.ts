@@ -5,7 +5,7 @@ import { collections } from "../database";
 export const storeRouter = express.Router();
 storeRouter.use(express.json());
 
-storeRouter.get("/", async (_req, res) => {
+storeRouter.get("/all", async (_req, res) => {
     try {
         const stores = await collections?.stores?.find({}).toArray();
         res.status(200).send(stores);
@@ -30,9 +30,27 @@ storeRouter.get("/:id", async (req, res) => {
     }
 });
 
-storeRouter.post("/", async (req, res) => {
+storeRouter.post("/new", async (req, res) => {
     try {
         const store = req.body;
+
+        // Validate required fields
+        if (!store.name || !store.location) {
+            return res.status(400).json({
+                success: false,
+                message: "Name and location are required fields"
+            });
+        }
+        
+        // Check for empty strings TODO
+        /*
+        if (store.name.trim()=== ""  || store.location.trim() === "") {
+            return res.status(400).json({
+                success: false,
+                message: "Name and location cannot be empty"
+            });
+        }
+        */
         const result = await collections?.stores?.insertOne(store);
 
         if (result?.acknowledged) {
