@@ -47,7 +47,7 @@ authRouter.post("/register",async (req, res) => {
     }
 });
 
-// Login
+// auth.routes.ts
 authRouter.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -66,35 +66,96 @@ authRouter.post("/login", async (req, res) => {
 
         // Generate JWT token
         const token = jwt.sign(
-            { userId: user._id },
+            { id: user._id, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'default_secret',
             { expiresIn: '24h' }
         );
 
+        // Remove password from response
         const { password: _, ...userWithoutPassword } = user;
-        res.status(200).send({ user: userWithoutPassword, token });
+
+        // Return token and user data
+        res.status(200).json({
+            token,
+            user: userWithoutPassword
+        });
 
     } catch (error) {
         console.error(error);
-        res.status(400).send(error instanceof Error ? error.message : "Unknown error");
+        res.status(500).send("Error during login");
     }
 });
 
-// Get user profile
-authRouter.get("/profile/:id", async (req, res) => {
+// Get all users
+authRouter.get("/all", async (req, res) => {
     try {
-        const id = req?.params?.id;
-        const query = { _id: new ObjectId(id) };
-        const user = await collections?.users?.findOne(query);
-
-        if (user) {
-            const { password: _, ...userWithoutPassword } = user;
-            res.status(200).send(userWithoutPassword);
-        } else {
-            res.status(404).send(`Failed to find user: ID ${id}`);
+        const users = collections.users;
+        if (!users) {
+            throw new Error('Users collection is not initialized');
         }
+        const allUsers = await users.find({}).toArray();
+        // Remove passwords from all users
+        const usersWithoutPasswords = allUsers.map(user => {
+            const { password: _, ...userWithoutPassword } = user;
+            return userWithoutPassword;
+        });
+        res.status(200).json({
+            success: true,
+            users: usersWithoutPasswords
+        });
     } catch (error) {
-        res.status(404).send(`Failed to find user: ID ${req?.params?.id}`);
+        console.error('Fetch all users error:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching users",
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+});
+
+// Get user profile by email
+authRouter.get("/profile", async (req, res) => {
+    try {
+        console.log('Query params:', req.query); // Debug log
+        const email = req.query.email as string;
+        
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email parameter is required"
+            });
+        }
+
+        const users = collections.users;
+        if (!users) {
+            throw new Error('Users collection is not initialized');
+        }
+
+        // Match query format with working /all endpoint
+        const user = await users.findOne({ email: email });
+        console.log('Found user:', user); // Debug log
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: `User not found with email: ${email}`
+            });
+        }
+
+        // Match response format with /all endpoint
+        const { password: _, ...userWithoutPassword } = user;
+        res.status(200).json({
+            success: true,
+            user: userWithoutPassword
+        });
+
+    } catch (error) {
+        console.error('Profile fetch error:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching user profile",
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
 });
 
@@ -125,3 +186,4 @@ authRouter.put("/profile/:id", async (req, res) => {
         res.status(400).send(message);
     }
 });
+

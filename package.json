@@ -1,24 +1,16 @@
 {
-  "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/jest": "^29.5.14",
-    "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^22.5.0",
-    "@types/supertest": "^6.0.2",
-    "jest": "^29.7.0",
-    "supertest": "^7.0.0",
-    "ts-jest": "^29.2.5",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
-  },
-  "dependencies": {
-    "bcrypt": "^5.1.1",
-    "dotenv": "^16.4.5",
-    "jsonwebtoken": "^9.0.2"
-  },
+  "name": "house-mate",
+  "version": "1.0.0",
   "scripts": {
-    "test": "jest --detectOpenHandles --forceExit"
+    "install:server": "cd server && npm install",
+    "build:server": "cd server && npm run build",
+    "start:server": "cd server && npm start",
+    "dev:server": "cd server && npm run dev",
+    "test:server": "cd server && npm test",
+    "install:all": "npm run install:server",
+    "build": "npm run build:server",
+    "start": "npm run start:server",
+    "dev": "npm run dev:server",
+    "test": "npm run test:server"
   }
 }
