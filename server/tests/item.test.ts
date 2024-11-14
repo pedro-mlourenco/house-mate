@@ -1,8 +1,8 @@
 // tests/item.test.ts
 import request from "supertest";
 import { itemRouter } from "../src/routes/item.routes";
-import { TestSetup, setupTestApp, clearCollections } from "./helpers/testSetup";
-import { UserRole } from "../src/models/user";
+import { TestSetup, setupTestApp, clearCollections, getAuthToken } from "./helpers/testSetup";
+import { authRouter } from "../src/routes/auth.routes";
 
 interface TestItem {
   name: string;
@@ -23,24 +23,13 @@ describe("Items API", () => {
 
   beforeAll(async () => {
     setup = await setupTestApp();
+    setup.app.use('/auth', authRouter);
     setup.app.use("/items", itemRouter);
   }, 30000);
 
   beforeEach(async () => {
     await clearCollections(setup.db);
-    const adminUser = {
-      email: `admin${Date.now()}@example.com`,
-      password: "admin123",
-      name: "Admin User",
-      role: UserRole.ADMIN,
-    };
-
-    await request(setup.app).post("/auth/register").send(adminUser);
-    const loginResponse = await request(setup.app)
-      .post("/auth/login")
-      .send({ email: adminUser.email, password: adminUser.password });
-
-    authToken = loginResponse.body.token;
+    authToken = await getAuthToken(setup.app);
   });
 
   afterAll(async () => {

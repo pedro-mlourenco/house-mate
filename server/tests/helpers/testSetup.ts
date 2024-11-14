@@ -4,6 +4,8 @@ dotenv.config({ path: ".env.test" });
 import express, { Express } from "express";
 import { MongoClient, Db } from "mongodb";
 import { connectToDatabase } from "../../src/database";
+import { authRouter } from "../../src/routes/auth.routes";
+import request from "supertest"; 
 
 export interface TestSetup {
   app: Express;
@@ -31,4 +33,25 @@ export async function clearCollections(db: Db): Promise<void> {
     db.collection("items").deleteMany({}),
     db.collection("stores").deleteMany({})
   ]);
+}
+export async function getAuthToken(app: Express): Promise<string> {
+  const adminUser = {
+    email: `admin${Date.now()}@test.com`,
+    password: 'admin123',
+    name: 'Admin Test',
+    role: 'admin'
+  };
+
+  await request(app)
+    .post('/auth/register')
+    .send(adminUser);
+
+  const loginResponse = await request(app)
+    .post('/auth/login')
+    .send({
+      email: adminUser.email,
+      password: adminUser.password
+    });
+
+  return loginResponse.body.token;
 }
