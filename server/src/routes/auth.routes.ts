@@ -10,7 +10,38 @@ import { UserRole } from "../models/user";
 export const authRouter = express.Router();
 authRouter.use(express.json());
 
-// Register new user
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - name
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [user, admin]
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *       409:
+ *         description: User already exists
+ */
 authRouter.post("/register", async (req, res) => {
   try {
     const { email, password, name, role = UserRole.USER } = req.body;
@@ -48,8 +79,63 @@ authRouter.post("/register", async (req, res) => {
       .send(error instanceof Error ? error.message : "Unknown error");
   }
 });
-
-// auth.routes.ts
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Authenticate user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User's email address
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: User's password
+ *           example:
+ *             email: "user@example.com"
+ *             password: "password123"
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *             example:
+ *               token: "eyJhbGciOiJIUzI1NiIs..."
+ *               user:
+ *                 email: "user@example.com"
+ *                 name: "John Doe"
+ *                 role: "user"
+ *       401:
+ *         description: Invalid credentials
+ *       500:
+ *         description: Server error
+ */
 authRouter.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -87,7 +173,51 @@ authRouter.post("/login", async (req, res) => {
   }
 });
 
-// Get all users
+/**
+ * @swagger
+ * /auth/all:
+ *   get:
+ *     summary: Get all users
+ *     description: Retrieve a list of all registered users (requires authentication)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of users successfully retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       email:
+ *                         type: string
+ *                         example: user@example.com
+ *                       name:
+ *                         type: string
+ *                         example: John Doe
+ *                       role:
+ *                         type: string
+ *                         enum: [user, admin]
+ *                         example: user
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *       401:
+ *         description: Unauthorized - No token provided
+ *       403:
+ *         description: Forbidden - Invalid token
+ *       500:
+ *         description: Server error
+ */ 
 authRouter.get("/all", authenticateToken, async (req, res) => {
   try {
     const users = collections.users;
@@ -114,7 +244,62 @@ authRouter.get("/all", authenticateToken, async (req, res) => {
   }
 });
 
-// Get user profile by email
+/**
+ * @swagger
+ * /auth/profile:
+ *   get:
+ *     summary: Get user profile by email
+ *     description: Retrieve a specific user's profile details (requires authentication)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: Email address of the user to retrieve
+ *         example: user@example.com
+ *     responses:
+ *       200:
+ *         description: User profile successfully retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                       example: user@example.com
+ *                     name:
+ *                       type: string
+ *                       example: John Doe
+ *                     role:
+ *                       type: string
+ *                       enum: [user, admin]
+ *                       example: user
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Email parameter is missing
+ *       401:
+ *         description: Unauthorized - No token provided
+ *       403:
+ *         description: Forbidden - Invalid token
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 authRouter.get("/profile", authenticateToken, async (req, res) => {
   try {
     const email = req.query.email as string;
@@ -156,7 +341,79 @@ authRouter.get("/profile", authenticateToken, async (req, res) => {
   }
 });
 
-// Update user
+/**
+ * @swagger
+ * /auth/profile:
+ *   put:
+ *     summary: Update user profile
+ *     description: Update a user's profile information (requires authentication)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: Email of the user to update
+ *         example: user@example.com
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: New name for the user
+ *                 example: John Updated Doe
+ *               password:
+ *                 type: string
+ *                 description: New password (optional)
+ *                 format: password
+ *                 example: newpassword123
+ *               role:
+ *                 type: string
+ *                 enum: [user, admin]
+ *                 description: New role (optional)
+ *                 example: admin
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                       example: user@example.com
+ *                     name:
+ *                       type: string
+ *                       example: John Updated Doe
+ *                     role:
+ *                       type: string
+ *                       example: admin
+ *       400:
+ *         description: Missing email parameter or invalid input
+ *       401:
+ *         description: Unauthorized - No token provided
+ *       403:
+ *         description: Forbidden - Invalid token
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 authRouter.put("/profile", authenticateToken, async (req, res) => {
   try {
     const email = req.query.email as string;
@@ -190,7 +447,71 @@ authRouter.put("/profile", authenticateToken, async (req, res) => {
   }
 });
 
-// Delete user
+/**
+ * @swagger
+ * /auth/profile:
+ *   delete:
+ *     summary: Delete user account
+ *     description: Delete a user's account by email (requires authentication)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: Email of the user to delete
+ *         example: user@example.com
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: User deleted successfully
+ *       400:
+ *         description: Email parameter is missing
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Email parameter is required
+ *       401:
+ *         description: Unauthorized - No token provided
+ *       403:
+ *         description: Forbidden - Invalid token
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: User not found with email: user@example.com
+ *       500:
+ *         description: Server error
+ */
 authRouter.delete("/profile", authenticateToken, async (req, res) => {
   try {
     const email = req.query.email as string;

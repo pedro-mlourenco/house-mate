@@ -26,3 +26,6 @@
 - ✅ **should delete store** 
 - ✅ **should not create store without required fields** 
 - ✅ **should get all stores** 
+
+# Added Swagger documentation
+- **Can be accessed by launching npm run dev and then on the enpoint /api-docs**

@@ -5,8 +5,9 @@ import { connectToDatabase } from "./database";
 import { itemRouter } from "./routes/item.routes";
 import { storeRouter } from "./routes/store.routes";
 import { authRouter } from "./routes/auth.routes";
+import swaggerUi from 'swagger-ui-express';
+import { setupSwagger } from './config/swagger';
 
-// Load environment variables from the .env file, where the ATLAS_URI is configured
 require("dotenv").config();
 
 const ATLAS_URI = process.env['ATLAS_URI'];
@@ -21,8 +22,11 @@ if (!ATLAS_URI) {
 connectToDatabase(ATLAS_URI)
   .then(() => {
     const app = express();
-    app.use(cors());
     
+    if (process.env.NODE_ENV === 'development') {
+      setupSwagger(app);
+    }
+    app.use(cors());
     app.use("/items", itemRouter);
     app.use("/stores", storeRouter);
     app.use("/auth", authRouter);
