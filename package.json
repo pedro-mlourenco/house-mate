@@ -7,14 +7,10 @@
     "start:server": "cd server && npm start",
     "dev:server": "cd server && npm run dev",
     "test:server": "cd server && npm test",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "install:all": "npm run install:server",
     "build": "npm run build:server",
-    "start": "concurrently \"npm run start:server\" \"npm run start:client\"",
-    "start:client": "cd client && npm start",
-    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm start\"",
+    "start": "npm run build:server && npm run start:server",
+    "dev": "npm run dev:server",
     "test": "npm run test:server"
-  },
-  "dependencies": {
-    "concurrently": "^8.2.0"
   }
 }
