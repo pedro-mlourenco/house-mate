@@ -42,24 +42,6 @@ const Index: React.FC = () => {
             Login
           </Button>
         </Box>
-
-        <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-          <Button
-            component={RouterLink}
-            to="/items"
-            variant="text"
-          >
-            View Items
-          </Button>
-          
-          <Button
-            component={RouterLink}
-            to="/stores"
-            variant="text"
-          >
-            View Stores
-          </Button>
-        </Box>
       </Box>
     </Container>
   );
