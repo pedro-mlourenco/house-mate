@@ -38,6 +38,23 @@ describe("Items API", () => {
 
   let itemId: string;
 
+  test("no token, should not authenticate", async () => {
+    const response = await request(setup.app)
+      .post("/items")
+      .send(testItem);
+
+    expect(response.status).toBe(401);
+  });
+
+  test("wrong token, should not authenticate", async () => {
+    const response = await request(setup.app)
+      .post("/items")
+      .set("Authorization", `Bearer  ${authToken}1`)
+      .send(testItem);
+
+    expect(response.status).toBe(403);
+  });
+
   test("should create new item", async () => {
     const response = await request(setup.app)
       .post("/items")

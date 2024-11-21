@@ -36,6 +36,23 @@ describe("Stores API", () => {
     await setup.mongoClient.close();
   });
 
+  test("no token, should not authenticate", async () => {
+    const response = await request(setup.app)
+      .post("/stores/new")
+      .send(testStore);
+
+    expect(response.status).toBe(401);
+  });
+
+  test("wrong token, should not authenticate", async () => {
+    const response = await request(setup.app)
+      .post("/stores/new")
+      .set("Authorization", `Bearer ${authToken}1`)
+      .send(testStore);
+
+    expect(response.status).toBe(403);
+  });
+
   test("should create new store", async () => {
     const response = await request(setup.app)
       .post("/stores/new")

@@ -68,6 +68,39 @@ describe("Auth API", () => {
     userToken = response.body.token;
   });
 
+  test("should logout user successfully", async () => {
+    // Register and login first
+    await request(setup.app).post("/auth/register").send(defaultUser);
+
+    const response = await request(setup.app).post("/auth/login").send({
+      email: defaultUser.email,
+      password: defaultUser.password,
+    });
+
+    expect(response.status).toBe(200);
+    const token = response.body.token;
+    console.log(response.body.token);
+    
+    // Test logout
+    const logoutResponse = await request(setup.app)
+      .post("/auth/logout")
+      .set("Authorization", `Bearer ${token}`);
+
+    console.log(logoutResponse.status);
+    expect(logoutResponse.status).toBe(200);
+    expect(logoutResponse.body.success).toBeTruthy();
+    console.log(logoutResponse.body.message);
+    expect(logoutResponse.body.message).toBe("Logged out successfully");
+
+    // Verify token is invalid by trying to access protected route
+    const protectedResponse = await request(setup.app)
+      .get("/auth/profile")
+      .set("Authorization", `Bearer ${token}`)
+      .query({ email: defaultUser.email });
+
+    expect(protectedResponse.status).toBe(401);
+  });
+
   test("should get user profile", async () => {
     // First register the user
     await request(setup.app).post("/auth/register").send(defaultUser);
