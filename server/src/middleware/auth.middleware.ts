@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserRole } from '../models/user';
 import jwt from 'jsonwebtoken';
+import { collections } from '../database';
 
 // Extend Express Request type
 declare global {
@@ -12,6 +13,11 @@ declare global {
       };
     }
   }
+}
+
+interface JwtUserPayload extends jwt.JwtPayload {
+  id: string;
+  role: UserRole;
 }
 
 export const checkRole = (roles: UserRole[]) => {
@@ -29,7 +35,7 @@ export const checkRole = (roles: UserRole[]) => {
     };
 };
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -37,9 +43,17 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     return res.status(401).json({ message: 'No token provided' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'default_secret', (err: any, user: any) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
-    req.user = user;
+  try {
+    // Check if token is blacklisted
+    const blacklistedToken = await collections.tokenBlacklist?.findOne({ token });
+    if (blacklistedToken) {
+      return res.status(401).json({ message: 'Token has been invalidated' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as JwtUserPayload;
+    req.user = decoded;
     next();
-  });
+  } catch (error) {
+    return res.status(403).json({ message: 'Invalid token' });
+  }
 };

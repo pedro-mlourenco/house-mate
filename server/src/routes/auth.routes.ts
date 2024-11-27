@@ -104,7 +104,7 @@ authRouter.post("/register", async (req, res) => {
  *                 format: password
  *                 description: User's password
  *           example:
- *             email: "user@example.com"
+ *             email: "user@ example.com"
  *             password: "password123"
  *     responses:
  *       200:
@@ -128,7 +128,7 @@ authRouter.post("/register", async (req, res) => {
  *             example:
  *               token: "eyJhbGciOiJIUzI1NiIs..."
  *               user:
- *                 email: "user@example.com"
+ *                 email: "user@ example.com"
  *                 name: "John Doe"
  *                 role: "user"
  *       401:
@@ -200,7 +200,7 @@ authRouter.post("/login", async (req, res) => {
  *                     properties:
  *                       email:
  *                         type: string
- *                         example: user@example.com
+ *                         example: user@ example.com
  *                       name:
  *                         type: string
  *                         example: John Doe
@@ -217,7 +217,7 @@ authRouter.post("/login", async (req, res) => {
  *         description: Forbidden - Invalid token
  *       500:
  *         description: Server error
- */ 
+ */
 authRouter.get("/all", authenticateToken, async (req, res) => {
   try {
     const users = collections.users;
@@ -261,7 +261,7 @@ authRouter.get("/all", authenticateToken, async (req, res) => {
  *           type: string
  *           format: email
  *         description: Email address of the user to retrieve
- *         example: user@example.com
+ *         example: user@ example.com
  *     responses:
  *       200:
  *         description: User profile successfully retrieved
@@ -278,7 +278,7 @@ authRouter.get("/all", authenticateToken, async (req, res) => {
  *                   properties:
  *                     email:
  *                       type: string
- *                       example: user@example.com
+ *                       example: user@ example.com
  *                     name:
  *                       type: string
  *                       example: John Doe
@@ -358,7 +358,7 @@ authRouter.get("/profile", authenticateToken, async (req, res) => {
  *           type: string
  *           format: email
  *         description: Email of the user to update
- *         example: user@example.com
+ *         example: user@ example.com
  *     requestBody:
  *       required: true
  *       content:
@@ -396,7 +396,7 @@ authRouter.get("/profile", authenticateToken, async (req, res) => {
  *                   properties:
  *                     email:
  *                       type: string
- *                       example: user@example.com
+ *                       example: user@ example.com
  *                     name:
  *                       type: string
  *                       example: John Updated Doe
@@ -464,7 +464,7 @@ authRouter.put("/profile", authenticateToken, async (req, res) => {
  *           type: string
  *           format: email
  *         description: Email of the user to delete
- *         example: user@example.com
+ *         example: user@ example.com
  *     responses:
  *       200:
  *         description: User deleted successfully
@@ -508,7 +508,7 @@ authRouter.put("/profile", authenticateToken, async (req, res) => {
  *                   example: false
  *                 message:
  *                   type: string
- *                   example: User not found with email: user@example.com
+ *                   example: User not found with email: user@ example.com
  *       500:
  *         description: Server error
  */
@@ -547,6 +547,66 @@ authRouter.delete("/profile", authenticateToken, async (req, res) => {
       success: false,
       message: "Error deleting user",
       error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     description: Invalidate user session
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully logged out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ *       401:
+ *         description: Unauthorized - No token provided
+ */
+authRouter.post("/logout", authenticateToken, async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided"
+      });
+    }
+
+    // Add token to blacklist
+    const decoded = jwt.decode(token) as jwt.JwtPayload;
+    if (!decoded.exp) {
+      throw new Error('Token has no expiration');
+    }
+
+    await collections.tokenBlacklist?.insertOne({
+      token,
+      expiresAt: new Date(decoded.exp * 1000)
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully"
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error during logout",
     });
   }
 });

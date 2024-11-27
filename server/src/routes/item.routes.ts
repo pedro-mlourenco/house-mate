@@ -1,7 +1,7 @@
 import * as express from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../database";
-import { authenticateToken, checkRole } from "../middleware/auth.middleware";
+import { authenticateToken } from "../middleware/auth.middleware";
 
 export const itemRouter = express.Router();
 itemRouter.use(express.json());
@@ -35,6 +35,7 @@ itemRouter.get("/:id", authenticateToken, async (req, res) => {
   }
 });
 
+// Create item
 itemRouter.post("/", authenticateToken, async (req, res) => {
   try {
     const item = req.body;
