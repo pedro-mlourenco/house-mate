@@ -49,7 +49,7 @@ describe("Items API", () => {
   test("wrong token, should not authenticate", async () => {
     const response = await request(setup.app)
       .post("/items")
-      .set("Authorization", `Bearer  ${authToken}1`)
+      .set("Authorization", `Bearer ${authToken}1`)
       .send(testItem);
 
     expect(response.status).toBe(403);
@@ -74,7 +74,6 @@ describe("Items API", () => {
     expect(createResponse.status).toBe(201);
     const itemId = createResponse.text.match(/ID (.*)\./)?.[1];
 
-    // Then try to get it
     const response = await request(setup.app)
       .get(`/items/${itemId}`)
       .set("Authorization", `Bearer ${authToken}`);
